@@ -4,6 +4,8 @@ A minimalist LLM chat application that only keeps one *temporary* chat session r
 
 Ideal for short and quick tasks. Inspired by Firefox Focus.
 
+<img alt="picochat" src="https://github.com/user-attachments/assets/98e8a0bf-540f-453d-aa46-092a62115d56" width="50%"/>
+
 ### 🤔 Why build this?
 I wanted a quick and efficient way to execute simple tasks like proofreading, minor bug/code explanations, etc., using language models. Things I don't mind storing for later use.
 Utilising small language models running locally on my laptop couldn't have been a better solution.
