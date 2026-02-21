@@ -2,9 +2,9 @@ import sys
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLineEdit, QPushButton, QTextEdit, QLabel, QFrame,
-    QDoubleSpinBox, QSpinBox, QFormLayout
+    QDoubleSpinBox, QFormLayout
 )
-from PySide6.QtCore import Qt, QThread, Signal, Slot
+from PySide6.QtCore import QThread, Signal, Slot
 from PySide6.QtGui import QShortcut, QKeySequence, QColor, QTextCharFormat, QTextCursor
 from qt_material import apply_stylesheet
 from openai import OpenAI
@@ -50,6 +50,9 @@ class PicoChat(QMainWindow):
         
         self.messages = []
         self.client = None
+
+        self.user_color = "#FFBF00"
+        self.llm_color = "#F5F5F5"
         
         self.init_ui()
         self.setup_shortcuts()
@@ -111,14 +114,9 @@ class PicoChat(QMainWindow):
         self.top_p_spin.setRange(0.0, 1.0)
         self.top_p_spin.setSingleStep(0.05)
         self.top_p_spin.setValue(0.95)
-        
-        self.top_k_spin = QSpinBox()
-        self.top_k_spin.setRange(1, 100)
-        self.top_k_spin.setValue(40)
 
         form_layout.addRow("Temp:", self.temp_spin)
         form_layout.addRow("Top-P:", self.top_p_spin)
-        form_layout.addRow("Top-K:", self.top_k_spin)
         
         sidebar_layout.addLayout(form_layout)
         sidebar_layout.addStretch()
@@ -146,7 +144,7 @@ class PicoChat(QMainWindow):
         
         input_container = QHBoxLayout()
         self.input_field = QLineEdit()
-        self.input_field.setPlaceholderText("Type a message...")
+        self.input_field.setPlaceholderText("Enter your query...")
         self.input_field.setStyleSheet("""
             QLineEdit {
                 selection-background-color: #FFBF00;
@@ -181,10 +179,12 @@ class PicoChat(QMainWindow):
     # Append message to chat display
     def append_message(self, role, text):
 
-        name = "You"
+        name = "YOU"
         
-        formatted_text = f"<b><u>{name}:</u></b> {text}<br>"
-        self.chat_display.append(formatted_text)
+        # formatted_text = f"<b><u>{name}</u></b>: {text}<br>"
+        # self.chat_display.append(formatted_text)
+        self.chat_display.append(f"> {text}<br>")
+
 
     # Send message to LLM
     def send_message(self):
@@ -208,11 +208,9 @@ class PicoChat(QMainWindow):
             params = {
                 "temperature": self.temp_spin.value(),
                 "top_p": self.top_p_spin.value(),
-                #"top_k": self.top_k_spin.value()
             }
-            
-            label_color = "#FFFFFF"
-            self.chat_display.append(f"<b><u><span style='color: {label_color}'>LLM:</span></u></b> ")
+
+            #self.chat_display.append(f"<b><u><span style='color: {self.llm_color}'>ASSISTANT:</span></u></b> ")
             self.chat_cursor_start = self.chat_display.textCursor().position()
             
             self.worker = ChatWorker(self.client, "default", self.messages, params)
@@ -234,7 +232,7 @@ class PicoChat(QMainWindow):
         
         # Force white color for chunks
         fmt = QTextCharFormat()
-        fmt.setForeground(QColor("white"))
+        fmt.setForeground(QColor(self.llm_color))
         cursor.setCharFormat(fmt)
         
         cursor.insertText(chunk)
@@ -255,8 +253,8 @@ class PicoChat(QMainWindow):
         cursor.removeSelectedText()
 
         # Convert LLM response to markdown format        
-        html_content = markdown.markdown(full_response, extensions=['fenced_code', 'codehilite'], output_format='html')
-        cursor.insertHtml(f"<div style='color: white'>{html_content}</div><br>")
+        html_content = markdown.markdown(full_response, extensions=['fenced_code', 'codehilite'])
+        cursor.insertHtml(f"<div style='color: {self.llm_color}'>{html_content}</div><br>")
         
         # Move cursor to end (auto scroll)
         self.chat_display.setTextCursor(cursor)
