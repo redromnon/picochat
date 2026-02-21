@@ -3,3 +3,4 @@ qt-material>=2.14
 openai>=1.0.0
 markdown
 Pygments
+pyinstaller
