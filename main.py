@@ -2,13 +2,24 @@ import sys
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLineEdit, QPushButton, QTextEdit, QLabel, QFrame,
-    QDoubleSpinBox, QFormLayout
+    QDoubleSpinBox, QFormLayout, QPlainTextEdit
 )
-from PySide6.QtCore import QThread, Signal, Slot
+from PySide6.QtCore import QThread, Signal, Slot, Qt
 from PySide6.QtGui import QShortcut, QKeySequence, QColor, QTextCharFormat, QTextCursor
 from qt_material import apply_stylesheet
 from openai import OpenAI
 import markdown
+
+# User input field
+class ChatInput(QPlainTextEdit):
+    returnPressed = Signal()
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Return and not (event.modifiers() & Qt.ShiftModifier):
+            self.returnPressed.emit()
+            event.accept()
+        else:
+            super().keyPressEvent(event)
 
 # Open AI-like LLM
 class ChatWorker(QThread):
@@ -48,13 +59,13 @@ class PicoChat(QMainWindow):
         self.setWindowTitle("PicoChat")
         self.setMinimumSize(900, 700)
         
-        self.messages = []
         self.client = None
 
         self.user_color = "#FFBF00"
         self.llm_color = "#F5F5F5"
         
         self.init_ui()
+        self.set_system_message()
         self.setup_shortcuts()
 
     def init_ui(self):
@@ -143,10 +154,12 @@ class PicoChat(QMainWindow):
         """)
         
         input_container = QHBoxLayout()
-        self.input_field = QLineEdit()
+        self.input_field = ChatInput()
         self.input_field.setPlaceholderText("Enter your query...")
+        self.input_field.setMaximumHeight(150)
         self.input_field.setStyleSheet("""
-            QLineEdit {
+            QPlainTextEdit {
+                color: #FFD740;
                 selection-background-color: #FFBF00;
                 selection-color: #FFFFFF;
             }
@@ -166,13 +179,29 @@ class PicoChat(QMainWindow):
         
         main_layout.addWidget(content_widget)
 
+    # Append text to chat display
+    def append_user_text(self, text):
+        fmt = QTextCharFormat()
+        
+        fmt.setForeground(QColor("#FFD740"))
+
+        cursor = self.chat_display.textCursor()
+        cursor.movePosition(QTextCursor.MoveOperation.End)
+        cursor.insertText("> " + text + "\n", fmt)
+    
+    # Shortcut keys
     def setup_shortcuts(self):
         self.clear_shortcut = QShortcut(QKeySequence("Ctrl+Shift+D"), self)
         self.clear_shortcut.activated.connect(self.new_session)
 
+    # Set new session and system message
+    def set_system_message(self):
+        self.messages = []
+        self.messages.append({"role": "system", "content": "You are a helpful assistant named Pico. Always reply in Markdown."})
+    
     # Clear and start new session
     def new_session(self):
-        self.messages = []
+        self.set_system_message()
         self.chat_display.clear()
         self.chat_display.append("<i>New session started. All history erased.</i> <br>")
 
@@ -189,12 +218,12 @@ class PicoChat(QMainWindow):
     # Send message to LLM
     def send_message(self):
 
-        user_text = self.input_field.text().strip()
+        user_text = self.input_field.toPlainText().strip()
         if not user_text:
             return
             
         self.input_field.clear()
-        self.append_message("user", user_text)
+        self.append_user_text(user_text)
         self.messages.append({"role": "user", "content": user_text})
         
         # Prepare client
