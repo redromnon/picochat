@@ -1,14 +1,21 @@
-import sys
+import os, sys
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLineEdit, QPushButton, QTextEdit, QLabel, QFrame,
-    QDoubleSpinBox, QFormLayout, QPlainTextEdit
+    QDoubleSpinBox, QFormLayout, QPlainTextEdit,
+    QSystemTrayIcon, QMenu, QStyle
 )
 from PySide6.QtCore import QThread, Signal, Slot, Qt
-from PySide6.QtGui import QShortcut, QKeySequence, QColor, QTextCharFormat, QTextCursor
+from PySide6.QtGui import QShortcut, QKeySequence, QColor, QTextCharFormat, QTextCursor, QAction, QIcon
 from qt_material import apply_stylesheet
 from openai import OpenAI
 import markdown
+
+def resource_path(relative_path):
+    """ Get absolute path to resource (PyInstaller) """
+    if hasattr(sys, '_MEIPASS'):
+        return os.path.join(sys._MEIPASS, relative_path)
+    return os.path.join(os.path.abspath("."), relative_path)
 
 # User input field
 class ChatInput(QPlainTextEdit):
@@ -67,6 +74,7 @@ class PicoChat(QMainWindow):
         self.init_ui()
         self.set_system_message()
         self.setup_shortcuts()
+        self.setup_tray()
 
     def init_ui(self):
 
@@ -297,8 +305,40 @@ class PicoChat(QMainWindow):
         self.chat_display.append(f"<br><i style='color: red'>Error: {error_msg}</i>")
         self.send_btn.setEnabled(True)
 
+    # SYSTEM TRAY ICON
+    # Set up System Tray
+    def setup_tray(self):
+        self.tray_icon = QSystemTrayIcon(self)
+        
+        # Use custom icon
+        icon_path = resource_path("assets/picochat_icon.png")
+        self.tray_icon.setIcon(QIcon(icon_path))
+        
+        # Menu
+        self.tray_menu = QMenu()
+        
+        self.open_action = QAction("Open", self)
+        self.open_action.triggered.connect(self.show)
+        
+        self.exit_action = QAction("Exit", self)
+        self.exit_action.triggered.connect(QApplication.instance().quit)
+        
+        self.tray_menu.addAction(self.open_action)
+        self.tray_menu.addAction(self.exit_action)
+        
+        self.tray_icon.setContextMenu(self.tray_menu)
+        self.tray_icon.show()
+        
+        # Add a double click action to open
+        self.tray_icon.activated.connect(self.on_tray_icon_activated)
+
+    def on_tray_icon_activated(self, reason):
+        if reason == QSystemTrayIcon.DoubleClick or reason == QSystemTrayIcon.Trigger:
+            self.show()
+
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+    app.setQuitOnLastWindowClosed(False)
     
     extra = {
         'density_scale': '3',
