@@ -156,12 +156,14 @@ class PicoChat(QMainWindow):
         input_container = QHBoxLayout()
         self.input_field = ChatInput()
         self.input_field.setPlaceholderText("Enter your query...")
-        self.input_field.setMaximumHeight(150)
+        self.input_field.setMaximumHeight(130)
         self.input_field.setStyleSheet("""
             QPlainTextEdit {
                 color: #FFD740;
                 selection-background-color: #FFBF00;
                 selection-color: #FFFFFF;
+                background-color: #1b1b1b;
+                border: 2px solid #bfbfbf;
             }
         """)
         self.input_field.returnPressed.connect(self.send_message)
