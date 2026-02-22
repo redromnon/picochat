@@ -163,7 +163,6 @@ class PicoChat(QMainWindow):
                 selection-background-color: #FFBF00;
                 selection-color: #FFFFFF;
                 background-color: #1b1b1b;
-                border: 2px solid #bfbfbf;
             }
         """)
         self.input_field.returnPressed.connect(self.send_message)
@@ -199,7 +198,7 @@ class PicoChat(QMainWindow):
     # Set new session and system message
     def set_system_message(self):
         self.messages = []
-        self.messages.append({"role": "system", "content": "You are a helpful assistant named Pico. Always reply in Markdown."})
+        self.messages.append({"role": "system", "content": "You are a helpful assistant named Pico. Use Markdown to format your response."})
     
     # Clear and start new session
     def new_session(self):
